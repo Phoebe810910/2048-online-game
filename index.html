@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2048 Multiplayer Online Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+
+    body {
+      background-color: #faf8ef;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      overflow-y: auto;
+      padding: 20px 0;
+    }
+
+    .modal-content {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      min-width: 320px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .modal-content h2 {
+      margin-bottom: 15px;
+      color: #776e65;
+    }
+
+    .modal-content h3 {
+      margin: 15px 0 8px;
+      color: #8f7a66;
+      text-align: left;
+    }
+
+    .modal-content p {
+      color: #555;
+      line-height: 1.5;
+      text-align: left;
+      margin-bottom: 8px;
+    }
+
+    .modal-content ul {
+      text-align: left;
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      padding-left: 20px;
+    }
+
+    .online-status {
+      font-weight: bold;
+      color: #f65e3b;
+      margin: 10px 0;
+      padding: 8px;
+      background-color: #eee4da;
+      border-radius: 5px;
+    }
+
+    .modal-content input {
+      padding: 12px;
+      margin: 10px 0;
+      width: 100%;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    .modal-content button {
+      padding: 12px 24px;
+      margin: 8px 5px;
+      background-color: #8f7a66;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .modal-content button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .modal-content button:hover:not(:disabled) {
+      background-color: #776e65;
+    }
+
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .game-header {
+      width: 400px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .game-header h1 {
+      color: #776e65;
+      font-size: 80px;
+      font-weight: bold;
+    }
+
+    .online-badge {
+      background-color: #f65e3b;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .game-info {
+      width: 400px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .score-panel {
+      display: flex;
+      gap: 10px;
+    }
+
+    .score-box {
+      background-color: #bbada0;
+      padding: 10px 20px;
+      border-radius: 5px;
+      text-align: center;
+    }
+
+    .score-box p:first-child {
+      color: #eee4da;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    .score-box p:last-child {
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .controls button {
+      padding: 10px 20px;
+      background-color: #8f7a66;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 0 3px;
+    }
+
+    .controls button:hover {
+      background-color: #776e65;
+    }
+
+    .grid-container {
+      background-color: #bbada0;
+      border-radius: 10px;
+      padding: 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-template-rows: repeat(4, 100px);
+      gap: 15px;
+    }
+
+    .tile {
+      width: 100px;
+      height: 100px;
+      background-color: #cdc1b4;
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      font-weight: bold;
+      color: #776e65;
+      transition: transform 0.2s ease;
+    }
+
+    .tile-2 { background-color: #eee4da; }
+    .tile-4 { background-color: #ede0c8; }
+    .tile-8 { background-color: #f2b179; color: white; }
+    .tile-16 { background-color: #f59563; color: white; }
+    .tile-32 { background-color: #f67c5f; color: white; }
+    .tile-64 { background-color: #f65e3b; color: white; }
+    .tile-128 { background-color: #edcf72; color: white; font-size: 35px; }
+    .tile-256 { background-color: #edcc61; color: white; font-size: 35px; }
+    .tile-512 { background-color: #edc850; color: white; font-size: 35px; }
+    .tile-1024 { background-color: #edc53f; color: white; font-size: 30px; }
+    .tile-2048 { background-color: #edc22e; color: white; font-size: 30px; }
+    .tile-super { background-color: #3c3a32; color: white; font-size: 30px; }
+
+    .game-tip {
+      margin-top: 20px;
+      color: #776e65;
+      font-size: 16px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #rankings-list {
+      margin: 20px 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .rank-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 10px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .rank-item span:first-child {
+      font-weight: bold;
+      color: #776e65;
+    }
+
+    .rank-item span:last-child {
+      color: #f65e3b;
+      font-weight: bold;
+    }
+
+    .rank-item.top3 {
+      background-color: #fff8e1;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 游戏加入弹窗（含介绍&规则） -->
+  <div id="join-modal" class="modal">
+    <div class="modal-content">
+      <h2>2048 Multiplayer Online</h2>
+      <div id="server-status" class="online-status">Checking server status...</div>
+      
+      <h3>About the Game</h3>
+      <p>2048 is a classic sliding tile puzzle game. Merge tiles to reach 2048, compete with friends, and climb the global leaderboard! This version supports up to 30 concurrent players.</p>
+      
+      <h3>How to Play</h3>
+      <ul>
+        <li>Use <strong>Arrow Keys (↑ ↓ ← →)</strong> to slide all tiles</li>
+        <li>Merge identical numbers to double their value and earn points</li>
+        <li>A new 2/4 tile appears after each valid move</li>
+        <li>Game ends when no valid moves are left</li>
+        <li>Submit your score to the global leaderboard after game over</li>
+      </ul>
+
+      <input type="text" id="username-input" placeholder="Enter your username (required)" required>
+      <button id="join-btn" disabled>Join Game & Start Playing</button>
+    </div>
+  </div>
+
+  <!-- 游戏主界面 -->
+  <div id="game-container" class="hidden">
+    <div class="game-header">
+      <h1>2048</h1>
+      <div class="online-badge" id="online-count">0/30 Players Online</div>
+    </div>
+
+    <div class="game-info">
+      <div class="score-panel">
+        <div class="score-box">
+          <p>Score</p>
+          <p id="score">0</p>
+        </div>
+        <div class="score-box">
+          <p>Best</p>
+          <p id="best-score">0</p>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="restart-btn">New Game</button>
+        <button id="rankings-btn">Leaderboard</button>
+      </div>
+    </div>
+
+    <div class="grid-container">
+      <div class="grid"></div>
+    </div>
+
+    <p class="game-tip">Use Arrow Keys (↑ ↓ ← →) to move tiles. Merge same numbers to get 2048!</p>
+
+    <!-- 游戏结束弹窗 -->
+    <div id="game-over-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Game Over!</h2>
+        <p style="text-align: center; font-size: 18px; margin: 10px 0;">Your Final Score: <strong id="final-score">0</strong></p>
+        <button id="submit-score-btn">Submit to Leaderboard</button>
+        <button id="play-again-btn">Play Again</button>
+      </div>
+    </div>
+
+    <!-- 全局排行榜弹窗 -->
+    <div id="rankings-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>🏆 Global Leaderboard</h2>
+        <div id="rankings-list"></div>
+        <button id="close-rankings-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===================== 配置项（部署后替换为你的后端地址）=====================
+    const BACKEND_URL = "https://your-deployed-backend-url.onrender.com";
+    // ==============================================================================
+
+    // 游戏核心变量
+    let grid;
+    let score = 0;
+    let bestScore = localStorage.getItem('2048-best-score') || 0;
+    let username = '';
+    let gameOver = false;
+    let maxPlayers = 30;
+
+    // DOM 元素
+    const joinModal = document.getElementById('join-modal');
+    const gameContainer = document.getElementById('game-container');
+    const serverStatus = document.getElementById('server-status');
+    const usernameInput = document.getElementById('username-input');
+    const joinBtn = document.getElementById('join-btn');
+    const onlineCount = document.getElementById('online-count');
+    const restartBtn = document.getElementById('restart-btn');
+    const rankingsBtn = document.getElementById('rankings-btn');
+    const scoreElement = document.getElementById('score');
+    const bestScoreElement = document.getElementById('best-score');
+    const gridElement = document.querySelector('.grid');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const finalScoreElement = document.getElementById('final-score');
+    const submitScoreBtn = document.getElementById('submit-score-btn');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const rankingsModal = document.getElementById('rankings-modal');
+    const rankingsList = document.getElementById('rankings-list');
+    const closeRankingsBtn = document.getElementById('close-rankings-btn');
+
+    // 初始化：检查服务器状态
+    checkServerStatus();
+    // 实时刷新在线人数（每5秒更新一次）
+    setInterval(checkServerStatus, 5000);
+
+    // 1. 检查服务器状态&在线人数
+    async function checkServerStatus() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/available`);
+        const data = await res.json();
+        maxPlayers = data.maxPlayers;
+        
+        // 更新在线人数显示
+        const onlineText = `${data.currentPlayers}/${data.maxPlayers} Players Online`;
+        serverStatus.textContent = `Server Status: ${onlineText}`;
+        onlineCount.textContent = onlineText;
+
+        // 服务器有空位，启用加入按钮
+        if (data.available) {
+          joinBtn.disabled = false;
+          serverStatus.style.backgroundColor = "#e8f5e9";
+          serverStatus.style.color = "#2e7d32";
+        } else {
+          joinBtn.disabled = true;
+          serverStatus.textContent = `Server Full! ${onlineText} - Please wait for a slot`;
+          serverStatus.style.backgroundColor = "#ffebee";
+          serverStatus.style.color = "#c62828";
+        }
+      } catch (err) {
+        serverStatus.textContent = "Failed to connect to server. Please check your backend URL.";
+        serverStatus.style.backgroundColor = "#ffebee";
+        serverStatus.style.color = "#c62828";
+        joinBtn.disabled = true;
+      }
+    }
+
+    // 2. 玩家加入游戏
+    joinBtn.addEventListener('click', async () => {
+      username = usernameInput.value.trim();
+      if (!username) {
+        alert('Please enter your username to join!');
+        return;
+      }
+      if (username.length > 20) {
+        alert('Username cannot exceed 20 characters');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          joinModal.classList.add('hidden');
+          gameContainer.classList.remove('hidden');
+          initGame();
+        } else {
+          alert(data.message);
+          checkServerStatus();
+        }
+      } catch (err) {
+        alert('Failed to join game. Please check the backend connection.');
+      }
+    });
+
+    // 3. 初始化游戏核心逻辑
+    function initGame() {
+      grid = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+      score = 0;
+      gameOver = false;
+      updateScore();
+      generateRandomTile();
+      generateRandomTile();
+      renderGrid();
+      document.addEventListener('keydown', handleKeyPress);
+    }
+
+    // 4. 生成随机方块
+    function generateRandomTile() {
+      const emptyTiles = [];
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          if (grid[i][j] === 0) emptyTiles.push({ x: i, y: j });
+        }
+      }
+      if (emptyTiles.length === 0) return;
+      const { x, y } = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+      grid[x][y] = Math.random() < 0.9 ? 2 : 4;
+    }
+
+    // 5. 渲染游戏棋盘
+    function renderGrid() {
+      gridElement.innerHTML = '';
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          const tile = document.createElement('div');
+          tile.classList.add('tile');
+          const value = grid[i][j];
+          if (value !== 0) {
+            tile.classList.add(value > 2048 ? 'tile-super' : `tile-${value}`);
+            tile.textContent = value;
+          }
+          gridElement.appendChild(tile);
+        }
+      }
+    }
+
+    // 6. 更新分数
+    function updateScore() {
+      scoreElement.textContent = score;
+      bestScore = Math.max(score, bestScore);
+      bestScoreElement.textContent = bestScore;
+      localStorage.setItem('2048-best-score', bestScore);
+    }
+
+    // 7. 键盘方向键控制
+    function handleKeyPress(e) {
+      if (gameOver) return;
+      e.preventDefault();
+      
+      let moved = false;
+      switch (e.key) {
+        case 'ArrowUp': moved = moveUp(); break;
+        case 'ArrowDown': moved = moveDown(); break;
+        case 'ArrowLeft': moved = moveLeft(); break;
+        case 'ArrowRight': moved = moveRight(); break;
+        default: return;
+      }
+
+      if (moved) {
+        generateRandomTile();
+        renderGrid();
+        if (isGameOver()) endGame();
+      }
+    }
+
+    // 8. 核心移动&合并逻辑
+    function moveLeft() {
+      let moved = false;
+      for (let i = 0; i < 4; i++) {
+        let row = grid[i].filter(num => num !== 0);
+        for (let j = 0; j < row.length - 1; j++) {
+          if (row[j] === row[j + 1]) {
+            row[j] *= 2;
+            score += row[j];
+            row.splice(j + 1, 1);
+            moved = true;
+          }
+        }
+        while (row.length < 4) row.push(0);
+        if (grid[i].join(',') !== row.join(',')) moved = true;
+        grid[i] = row;
+      }
+      return moved;
+    }
+
+    function moveRight() {
+      let moved = false;
+      for (let i = 0; i < 4; i++) {
+        let row = grid[i].filter(num => num !== 0);
+        for (let j = row.length - 1; j > 0; j--) {
+          if (row[j] === row[j - 1]) {
+            row[j] *= 2;
+            score += row[j];
+            row.splice(j - 1, 1);
+            moved = true;
+          }
+        }
+        while (row.length < 4) row.unshift(0);
+        if (grid[i].join(',') !== row.join(',')) moved = true;
+        grid[i] = row;
+      }
+      return moved;
+    }
+
+    function moveUp() {
+      let moved = false;
+      for (let j = 0; j < 4; j++) {
+        let col = [];
+        for (let i = 0; i < 4; i++) if (grid[i][j] !== 0) col.push(grid[i][j]);
+        
+        for (let i = 0; i < col.length - 1; i++) {
+          if (col[i] === col[i + 1]) {
+            col[i] *= 2;
+            score += col[i];
+            col.splice(i + 1, 1);
+            moved = true;
+          }
+        }
+        while (col.length < 4) col.push(0);
+        
+        for (let i = 0; i < 4; i++) {
+          if (grid[i][j] !== col[i]) moved = true;
+          grid[i][j] = col[i];
+        }
+      }
+      return moved;
+    }
+
+    function moveDown() {
+      let moved = false;
+      for (let j = 0; j < 4; j++) {
+        let col = [];
+        for (let i = 0; i < 4; i++) if (grid[i][j] !== 0) col.push(grid[i][j]);
+        
+        for (let i = col.length - 1; i > 0; i--) {
+          if (col[i] === col[i - 1]) {
+            col[i] *= 2;
+            score += col[i];
+            col.splice(i - 1, 1);
+            moved = true;
+          }
+        }
+        while (col.length < 4) col.unshift(0);
+        
+        for (let i = 0; i < 4; i++) {
+          if (grid[i][j] !== col[i]) moved = true;
+          grid[i][j] = col[i];
+        }
+      }
+      return moved;
+    }
+
+    // 9. 游戏结束检测
+    function isGameOver() {
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) if (grid[i][j] === 0) return false;
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          if (j < 3 && grid[i][j] === grid[i][j + 1]) return false;
+          if (i < 3 && grid[i][j] === grid[i + 1][j]) return false;
+        }
+      }
+      return true;
+    }
+
+    // 10. 游戏结束处理
+    function endGame() {
+      gameOver = true;
+      finalScoreElement.textContent = score;
+      gameOverModal.classList.remove('hidden');
+      document.removeEventListener('keydown', handleKeyPress);
+    }
+
+    // 11. 提交分数到全局排行榜
+    submitScoreBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/submit-score`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, score })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          alert('Score submitted to global leaderboard successfully!');
+          submitScoreBtn.disabled = true;
+          gameOverModal.classList.add('hidden');
+        } else {
+          alert('Failed to submit score');
+        }
+      } catch (err) {
+        alert('Failed to connect to server');
+      }
+    });
+
+    // 12. 重新开始游戏
+    playAgainBtn.addEventListener('click', () => {
+      gameOverModal.classList.add('hidden');
+      initGame();
+    });
+
+    // 13. 查看全局排行榜
+    rankingsBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/rankings`);
+        const rankings = await res.json();
+        rankingsList.innerHTML = '';
+        
+        if (rankings.length === 0) {
+          rankingsList.innerHTML = '<p style="text-align: center; padding: 20px 0;">No scores yet. Be the first on the leaderboard!</p>';
+        } else {
+          rankings.forEach(item => {
+            const rankItem = document.createElement('div');
+            rankItem.classList.add('rank-item');
+            if (item.rank <= 3) rankItem.classList.add('top3');
+            rankItem.innerHTML = `
+              <span>#${item.rank} ${item.username}</span>
+              <span>${item.score} pts</span>
+            `;
+            rankingsList.appendChild(rankItem);
+          });
+        }
+        rankingsModal.classList.remove('hidden');
+      } catch (err) {
+        alert('Failed to load leaderboard');
+      }
+    });
+
+    // 14. 关闭排行榜
+    closeRankingsBtn.addEventListener('click', () => {
+      rankingsModal.classList.add('hidden');
+    });
+
+    // 15. 手动重启游戏
+    restartBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to start a new game? Your current progress will be lost.')) {
+        initGame();
+      }
+    });
+
+    // 16. 玩家退出时释放名额
+    window.addEventListener('beforeunload', async () => {
+      if (username) {
+        await fetch(`${BACKEND_URL}/api/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        });
+      }
+    });
+
+    // 页面隐藏/关闭时释放名额
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'hidden' && username) {
+        await fetch(`${BACKEND_URL}/api/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username })
+        });
+      }
+    });
+  </script>
+</body>
+</html>
